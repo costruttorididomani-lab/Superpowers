@@ -1,0 +1,75 @@
+# =============================================================================
+# UNIVERSO DEGLI STRUMENTI - WealthLab
+# -----------------------------------------------------------------------------
+# Per aggiungere uno strumento basta aggiungere una voce qui e lanciare
+#   python -m wealthlab update
+# Campi:
+#   id          identificativo interno univoco (MAIUSCOLO, senza spazi)
+#   name        nome descrittivo
+#   asset_class EQUITY | BOND | COMMODITY | FUND | FX | MACRO | CASH
+#   region      WORLD | US | EUROPE | ITALY | GERMANY | FRANCE | SPAIN | UK | JAPAN | EM | ASIA ...
+#   currency    valuta in cui e' quotato lo strumento (USD, EUR, GBP, JPY, HKD)
+#   source      yahoo | fred | csv
+#   symbol      ticker della fonte (Yahoo / codice FRED / nome file CSV)
+#   kind        price (default) | yield (rendimento % per governativi/tassi) | index (CPI)
+#   duration    (solo BOND) duration modificata di riferimento del building block
+# =============================================================================
+
+base_currency: EUR
+fx_series: EURUSD          # serie usata per convertire USD -> EUR
+history_start: "2005-01-01"
+
+instruments:
+  # ---------------------------------------------------------------- AZIONARIO
+  - {id: MSCI_WORLD,  name: "MSCI World (USD)",        asset_class: EQUITY, region: WORLD,   currency: USD, source: yahoo, symbol: "^990100-USD-STRD"}
+  - {id: SP500,       name: "S&P 500",                 asset_class: EQUITY, region: US,      currency: USD, source: yahoo, symbol: "^GSPC"}
+  - {id: NASDAQ100,   name: "Nasdaq 100",              asset_class: EQUITY, region: US,      currency: USD, source: yahoo, symbol: "^NDX"}
+  - {id: EUROSTOXX50, name: "Euro Stoxx 50",           asset_class: EQUITY, region: EUROPE,  currency: EUR, source: yahoo, symbol: "^STOXX50E"}
+  - {id: FTSEMIB,     name: "FTSE MIB",                asset_class: EQUITY, region: ITALY,   currency: EUR, source: yahoo, symbol: "FTSEMIB.MI"}
+  - {id: DAX,         name: "DAX (total return)",      asset_class: EQUITY, region: GERMANY, currency: EUR, source: yahoo, symbol: "^GDAXI"}
+  - {id: CAC40,       name: "CAC 40",                  asset_class: EQUITY, region: FRANCE,  currency: EUR, source: yahoo, symbol: "^FCHI"}
+  - {id: IBEX35,      name: "IBEX 35",                 asset_class: EQUITY, region: SPAIN,   currency: EUR, source: yahoo, symbol: "^IBEX"}
+  - {id: FTSE100,     name: "FTSE 100",                asset_class: EQUITY, region: UK,      currency: GBP, source: yahoo, symbol: "^FTSE"}
+  - {id: NIKKEI225,   name: "Nikkei 225",              asset_class: EQUITY, region: JAPAN,   currency: JPY, source: yahoo, symbol: "^N225"}
+  - {id: MSCI_EM,     name: "MSCI Emerging (ETF EEM)", asset_class: EQUITY, region: EM,      currency: USD, source: yahoo, symbol: "EEM"}
+
+  # -------------------------------------------- GOVERNATIVI (rendimenti, %)
+  # Serie OECD/FRED mensili. Il rendimento totale del building block viene
+  # ricostruito come: carry (y/12) - Duration * dY + 1/2 * Convessita' * dY^2
+  - {id: BTP_10Y,   name: "BTP Italia 10Y",       asset_class: BOND, region: ITALY,   currency: EUR, source: fred, symbol: IRLTLT01ITM156N, kind: yield, duration: 8.0}
+  - {id: BUND_10Y,  name: "Bund Germania 10Y",    asset_class: BOND, region: GERMANY, currency: EUR, source: fred, symbol: IRLTLT01DEM156N, kind: yield, duration: 8.5}
+  - {id: OAT_10Y,   name: "OAT Francia 10Y",      asset_class: BOND, region: FRANCE,  currency: EUR, source: fred, symbol: IRLTLT01FRM156N, kind: yield, duration: 8.5}
+  - {id: BONOS_10Y, name: "Bonos Spagna 10Y",     asset_class: BOND, region: SPAIN,   currency: EUR, source: fred, symbol: IRLTLT01ESM156N, kind: yield, duration: 8.0}
+  - {id: UST_10Y,   name: "US Treasury 10Y",      asset_class: BOND, region: US,      currency: USD, source: fred, symbol: GS10,            kind: yield, duration: 8.5}
+  - {id: UST_2Y,    name: "US Treasury 2Y",       asset_class: BOND, region: US,      currency: USD, source: fred, symbol: GS2,             kind: yield, duration: 1.9}
+  - {id: EUR_3M,    name: "Euribor 3M (monetario)", asset_class: CASH, region: EUROPE, currency: EUR, source: fred, symbol: IR3TIB01EZM156N, kind: yield, duration: 0.25}
+
+  # ---------------------------------------------------------- MATERIE PRIME
+  - {id: GOLD,      name: "Oro",                  asset_class: COMMODITY, region: WORLD, currency: USD, source: yahoo, symbol: "GC=F"}
+  - {id: SILVER,    name: "Argento",              asset_class: COMMODITY, region: WORLD, currency: USD, source: yahoo, symbol: "SI=F"}
+  - {id: WTI,       name: "Petrolio WTI",         asset_class: COMMODITY, region: WORLD, currency: USD, source: yahoo, symbol: "CL=F"}
+  - {id: BRENT,     name: "Petrolio Brent",       asset_class: COMMODITY, region: WORLD, currency: USD, source: yahoo, symbol: "BZ=F"}
+  - {id: NATGAS,    name: "Gas naturale",         asset_class: COMMODITY, region: WORLD, currency: USD, source: yahoo, symbol: "NG=F"}
+  - {id: COPPER,    name: "Rame",                 asset_class: COMMODITY, region: WORLD, currency: USD, source: yahoo, symbol: "HG=F"}
+  - {id: GSCI,      name: "S&P GSCI (paniere)",   asset_class: COMMODITY, region: WORLD, currency: USD, source: yahoo, symbol: "^SPGSCI"}
+
+  # ------------------------------------------------------------ VALUTE/MACRO
+  - {id: EURUSD,    name: "Cambio EUR/USD",       asset_class: FX,    region: WORLD,  currency: USD, source: yahoo, symbol: "EURUSD=X"}
+  - {id: EURGBP,    name: "Cambio EUR/GBP",       asset_class: FX,    region: WORLD,  currency: GBP, source: yahoo, symbol: "EURGBP=X"}
+  - {id: EURJPY,    name: "Cambio EUR/JPY",       asset_class: FX,    region: WORLD,  currency: JPY, source: yahoo, symbol: "EURJPY=X"}
+  - {id: CPI_EZ,    name: "Inflazione Area Euro (HICP)", asset_class: MACRO, region: EUROPE, currency: EUR, source: fred, symbol: CP0000EZ19M086NEST, kind: index}
+  - {id: CPI_US,    name: "Inflazione USA (CPI)", asset_class: MACRO, region: US,     currency: USD, source: fred, symbol: CPIAUCSL,        kind: index}
+
+  # ------------------------------------------------------------------ FONDI
+  # I rating Morningstar sono proprietari: i fondi 4-5 stelle vanno selezionati
+  # da Morningstar Direct / piattaforma interna e inseriti qui.
+  # Opzione A (Yahoo): molti fondi UE hanno un ticker Yahoo = codice Morningstar
+  #   es. symbol: "0P0000XXXX.F"  -> source: yahoo
+  # Opzione B (CSV): esporta i NAV mensili in data/import/<symbol>.csv
+  #   (colonne: date,value) -> source: csv
+  # Campi extra facoltativi: isin, morningstar_stars, morningstar_category
+  # Esempio (disattivato):
+  # - {id: FONDO_ESEMPIO, name: "Fondo Azionario Globale X", asset_class: FUND, region: WORLD,
+  #    currency: EUR, source: csv, symbol: fondo_esempio, isin: LU0000000000,
+  #    morningstar_stars: 4, morningstar_category: "Azionari Internazionali Large Cap Blend",
+  #    fund_type: EQUITY}

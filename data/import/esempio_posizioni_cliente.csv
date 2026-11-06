@@ -1,0 +1,7 @@
+descrizione;isin;controvalore;building_block
+ETF iShares Core MSCI World;IE00B4L5Y983;150.000;MSCI_WORLD
+BTP 4% 2033;;80.000;BTP_10Y
+Bund 2,6% 2034;;40.000;BUND_10Y
+Azioni italiane;;30.000;FTSEMIB
+Oro fisico;;20.000;GOLD
+Liquidita conto;;30.000;EUR_3M
