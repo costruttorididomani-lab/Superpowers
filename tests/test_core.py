@@ -118,3 +118,28 @@ def test_client_flow(tmp_path, db, meta, rets):
     assert st.notna().all().all()
     ff = fund_fit(asset_returns(db), BASE, ["DEMO_FONDO_AZ_GLOBALE"], {"DEMO_FONDO_AZ_GLOBALE": "MSCI_WORLD"}, meta)
     assert "Alpha annuo" in ff.columns
+
+
+def test_completed_months_excludes_current():
+    from wealthlab.updater import completed_months
+    s = pd.Series([1.0, 2.0, 3.0], index=pd.to_datetime(["2026-09-30", "2026-10-31", "2026-11-30"]))
+    out = completed_months(s, today=pd.Timestamp("2026-11-07"))
+    assert list(out.index.strftime("%Y-%m")) == ["2026-09", "2026-10"]
+
+
+def test_fill_missing_never_overwrites(tmp_path):
+    d = Database(tmp_path / "f.db")
+    d.upsert_instruments([{"id": "A", "name": "A", "asset_class": "EQUITY", "source": "csv", "symbol": "a"}])
+    idx = pd.date_range("2020-01-31", periods=3, freq="ME")
+    d.upsert_series("A", pd.Series([1.0, 2.0], index=idx[1:]), "yahoo")
+    n = d.fill_missing("A", pd.Series([9.0, 9.0, 9.0], index=idx), "seed")
+    lv = d.levels(["A"])["A"]
+    assert n == 1 and lv.iloc[0] == 9.0 and lv.iloc[1] == 1.0
+
+
+def test_seed_files_are_valid():
+    from wealthlab.loaders import fetch_csv
+    from wealthlab.updater import SEED_DIR
+    for f in SEED_DIR.glob("*.csv"):
+        s = fetch_csv(str(f))
+        assert len(s) > 200 and s.index.is_monotonic_increasing and (s > 0).all()

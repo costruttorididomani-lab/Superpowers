@@ -19,22 +19,28 @@ def to_month_end(s: pd.Series, how: str = "last") -> pd.Series:
     return s.dropna()
 
 
-def fetch_yahoo(symbol: str, start: str) -> pd.Series:
-    """Prezzi (Adj Close se disponibile, include dividendi per ETF/fondi) da Yahoo Finance."""
+def fetch_yahoo(symbol: str, start: str, retries: int = 3) -> pd.Series:
+    """Chiusure di fine mese da Yahoo Finance, calcolate dai dati GIORNALIERI (prezzi rettificati:
+    per ETF/fondi includono i dividendi). Le barre mensili di Yahoo hanno buchi sui future."""
+    import time
+
     import yfinance as yf
 
-    df = yf.download(symbol, start=start, interval="1mo", auto_adjust=True, progress=False, threads=False)
-    if df is None or df.empty:
-        # alcuni simboli rispondono solo in daily
-        df = yf.download(symbol, start=start, interval="1d", auto_adjust=True, progress=False, threads=False)
-    if df is None or df.empty:
-        raise ValueError(f"Nessun dato Yahoo per {symbol}")
-    close = df["Close"]
-    if isinstance(close, pd.DataFrame):
-        close = close.iloc[:, 0]
-    s = to_month_end(close)
-    # con interval=1mo Yahoo etichetta il mese con il primo giorno: dopo il resample e' gia' fine mese
-    return s[s.index >= pd.Timestamp(start)]
+    last_err = None
+    for attempt in range(retries):
+        try:
+            df = yf.download(symbol, start=start, interval="1d", auto_adjust=True, progress=False, threads=False)
+            if df is not None and not df.empty:
+                close = df["Close"]
+                if isinstance(close, pd.DataFrame):
+                    close = close.iloc[:, 0]
+                time.sleep(0.5)  # cortesia verso il servizio (evita blocchi per troppe richieste)
+                return to_month_end(close)
+            last_err = ValueError(f"Nessun dato Yahoo per {symbol}")
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+        time.sleep(2 * (attempt + 1))
+    raise last_err
 
 
 def fetch_fred(code: str, start: str) -> pd.Series:
@@ -48,6 +54,20 @@ def fetch_fred(code: str, start: str) -> pd.Series:
     df.columns = ["date", "value"]
     df["value"] = pd.to_numeric(df["value"], errors="coerce")
     s = df.set_index(pd.to_datetime(df["date"]))["value"]
+    return to_month_end(s)
+
+
+def fetch_ecb(key: str, start: str) -> pd.Series:
+    """Serie del Data Portal BCE (es. 'IRS/M.IT.L.L40.CI.0000.EUR.N.Z' = rendimento BTP 10 anni,
+    media mensile). Nessuna API key necessaria."""
+    import requests
+
+    url = f"https://data-api.ecb.europa.eu/service/data/{key}"
+    r = requests.get(url, params={"format": "csvdata", "startPeriod": start[:7]}, timeout=60)
+    r.raise_for_status()
+    df = pd.read_csv(io.StringIO(r.text))
+    s = pd.Series(pd.to_numeric(df["OBS_VALUE"], errors="coerce").values,
+                  index=pd.PeriodIndex(df["TIME_PERIOD"], freq="M").to_timestamp(how="end").normalize())
     return to_month_end(s)
 
 
@@ -66,6 +86,6 @@ def fetch_csv(name: str, start: str | None = None) -> pd.Series:
     date_col = next(c for c in df.columns if c in ("date", "data"))
     val_col = next(c for c in df.columns if c in ("value", "valore", "nav", "close", "prezzo"))
     s = pd.Series(pd.to_numeric(df[val_col], errors="coerce").values,
-                  index=pd.to_datetime(df[date_col], dayfirst=True))
+                  index=pd.to_datetime(df[date_col], dayfirst=not df[date_col].astype(str).str.match(r"^\d{4}-").all()))
     s = to_month_end(s)
     return s[s.index >= pd.Timestamp(start)] if start else s

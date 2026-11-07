@@ -5,6 +5,7 @@
   demo      popola il database con dati DIMOSTRATIVI sintetici (per prove offline)
   status    copertura dati per strumento
   corr      matrice di correlazione (--ids ...)
+  export    esporta il database in Excel (data/snapshot/database_mensile.xlsx)
   simulate  simulazione rapida  (--weights MSCI_WORLD=0.5,BTP_10Y=0.5 --years 10)
 """
 from __future__ import annotations
@@ -24,7 +25,7 @@ from .updater import update_database
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="wealthlab")
-    ap.add_argument("cmd", choices=["init", "update", "demo", "status", "corr", "simulate"])
+    ap.add_argument("cmd", choices=["init", "update", "demo", "status", "corr", "export", "simulate"])
     ap.add_argument("--db", default=None)
     ap.add_argument("--full", action="store_true")
     ap.add_argument("--only", default=None)
@@ -52,6 +53,9 @@ def main(argv=None):
     elif a.cmd == "corr":
         ids = a.ids.split(",") if a.ids else None
         print(correlation(asset_returns(db, ids)).round(2).to_string())
+    elif a.cmd == "export":
+        from .export import export_snapshot
+        print(f"Esportato: {export_snapshot(db)}")
     elif a.cmd == "simulate":
         w = {k: float(v) for k, v in (x.split("=") for x in a.weights.split(","))}
         rets = asset_returns(db)

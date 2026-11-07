@@ -1,7 +1,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-data/wealthlab.db
+data/wealthlab_*.db
 data/import/*.csv
 data/import/*.xlsx
 !data/import/esempio_*.csv

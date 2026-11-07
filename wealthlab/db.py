@@ -128,6 +128,13 @@ class Database:
             )
         return len(rows)
 
+    def fill_missing(self, instrument_id: str, series: pd.Series, source: str) -> int:
+        """Inserisce solo le date non ancora presenti (integrazione storica da fonte secondaria)."""
+        existing = self.levels([instrument_id])
+        have = set(existing.index) if not existing.empty else set()
+        s = series.dropna()
+        return self.upsert_series(instrument_id, s[[d not in have for d in s.index]], source)
+
     def last_date(self, instrument_id: str, exclude_source: str | None = "DEMO") -> pd.Timestamp | None:
         q = "SELECT MAX(date) FROM observations WHERE instrument_id=?"
         params: list = [instrument_id]
